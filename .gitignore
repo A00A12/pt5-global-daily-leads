@@ -5,5 +5,6 @@
 !README.md
 !daily/
 !daily/*.md
+!daily/*.json
 !scripts/
 !scripts/build_daily_markdown.mjs
