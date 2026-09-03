@@ -1,0 +1,9 @@
+# Publish only the GitHub handoff artifacts. Keep local data, outputs, logs,
+# credentials, browser state, and working scripts out of the public repository.
+*
+!.gitignore
+!README.md
+!daily/
+!daily/*.md
+!scripts/
+!scripts/build_daily_markdown.mjs
