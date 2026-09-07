@@ -1,5 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fields, validateDocument } from "./daily-contract.mjs";
+import { assertMarkdownMatches } from "./daily-markdown-contract.mjs";
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((pairs, value, index, values) => {
@@ -45,11 +47,7 @@ const pad = (value) =>
 const clean = (value) => String(value ?? "").trim();
 const leadId = (_row, index) =>
   `PT5-${date.replace(/-/g, "")}-${String(start + index).padStart(3, "0")}`;
-const fieldOrder = [
-  "名称", "类别", "国家", "地区/时区", "优先级", "建议当天是否联系", "目标客户",
-  "公开收费/门槛", "推荐合作切入", "建议联系话术要点", "公开联系方式", "公开网址",
-  "公开联系电话", "公开邮箱", "公开WhatsApp", "公开Slack/社群入口", "来源URL", "注意事项",
-];
+const fieldOrder = Object.keys(fields);
 
 // JSON 字段使用稳定英文键，避免下游系统依赖 Markdown 标题或中文展示文案。
 // Markdown 和 JSON 都由同一份已验证数据生成，因此两种格式不会出现内容漂移。
@@ -62,6 +60,7 @@ const leads = rows.map((row, index) => ({
   priority: clean(row["优先级"]),
   contact_today: clean(row["建议当天是否联系"]) === "Yes",
   target_customer: clean(row["目标客户"]),
+  customer_profile: clean(row["客户画像"]),
   public_pricing: clean(row["公开收费/门槛"]),
   recommended_approach: clean(row["推荐合作切入"]),
   contact_talking_points: clean(row["建议联系话术要点"]),
@@ -82,6 +81,9 @@ for (const lead of leads) {
   if (!new Set(["A", "B", "C"]).has(lead.priority)) {
     throw new Error(`Lead ${lead.lead_id} has an invalid priority.`);
   }
+}
+if (rows.some((row) => !["Yes", "No"].includes(clean(row["建议当天是否联系"])))) {
+  throw new Error("Contact choice must be Yes or No.");
 }
 if (new Set(leads.map((lead) => lead.lead_id)).size !== leads.length) {
   throw new Error("Generated lead_id values must be unique.");
@@ -127,11 +129,14 @@ const machineDocument = {
     today_rows: Number(validation.today_rows),
     unique_names: Number(validation.unique_names),
     contact_today: Number(validation.contact_today),
-    feishu_import: clean(validation.feishu_import || "verified"),
+    feishu_import: clean(validation.feishu_import || "已通过"),
   },
   leads,
 };
 
+// 文件写出前验证两种表示完全相同，避免发布只有 Markdown 更新的批次。
+validateDocument(machineDocument);
+assertMarkdownMatches(`${lines.join("\n")}\n`, machineDocument);
 await Promise.all([fs.mkdir(path.dirname(args.output), { recursive: true }), fs.mkdir(path.dirname(jsonOutput), { recursive: true })]);
 await Promise.all([
   fs.writeFile(args.output, `${lines.join("\n")}\n`, "utf8"),

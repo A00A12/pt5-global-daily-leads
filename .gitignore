@@ -8,3 +8,11 @@
 !daily/*.json
 !scripts/
 !scripts/build_daily_markdown.mjs
+!scripts/daily-contract.mjs
+!scripts/daily-markdown-contract.mjs
+!scripts/daily-contract.test.mjs
+!scripts/check-daily.mjs
+!scripts/backfill-published-json.mjs
+!.github/
+!.github/workflows/
+!.github/workflows/validate-daily.yml

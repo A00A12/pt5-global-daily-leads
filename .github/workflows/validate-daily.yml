@@ -1,0 +1,15 @@
+name: Validate daily publication
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # 机器文件与阅读文件必须成对且内容一致，新增字段遗漏会直接使检查失败。
+      - run: node scripts/check-daily.mjs
+      - run: node --test scripts/daily-contract.test.mjs
